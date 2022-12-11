@@ -1,0 +1,354 @@
+# 정리# 
+
+docker 사용 이유 : 동일한 환경에서 개발 및 배포 환경을 갖추기 위함
+
+VM의 경우 linux 위에 라이브러리 위에 앱이 돌아가는데 불필요한 용량, 메모리 소모 퍼포먼스가 느리고 부팅 시간 오래걸림
+
+하지만 독립된 환경임
+
+docker의 경우 os위에 os-built-in support 위에 도커엔진 위에 각 컨테이너로 들어감
+
+docker hub
+여러 이미지 있음
+
+docker run node
+위 명령어 실행시 local에 node라는 이름의 image가 없으면 도커허브에서 가져옴
+
+docker ps -a
+-a : 종료된 컨테이너까지 모두 출력
+
+docker run -it node
+-it : interacting mode
+
+Dockerfile
+
+FROM : base가 될 이미지 설정, base image
+
+COPY : . .
+앞 : Dockerfile이 존재하는 경로와 같은 경로의 모든 파일
+
+뒤 : 이미지 / 컨테이너 내부 파일 시스템 위치
+
+WORKDIR : 이미지 / 컨테이너의 파일 시스템 이동
+
+RUN : 명령어 실행
+
+CMD : 명령어 실행 (이미지 생성단계에서 실행이 아닌 컨테이너 실행시 사용할 커맨드)
+
+EXPOSE : 특정 포트를 상위 os에 노출 (Optional)
+
+docker run -p 3000:80 이미지 이름
+
+-p 로컬 포트 : 컨테이너 내부 포트
+
+docker image
+outlayer based archtecture : 진짜 있는 용어인지 모르겠음
+
+docker --help
+
+docker -it
+	-i : interactive
+	-t : use tty (terminal)
+
+docker start -a -i
+	-> same
+
+docker image prune
+
+docker run --rm
+	-> 컨테이너 stop시 자동 삭제
+
+docker cp /a/. container:/a
+	-> 파일 복사
+
+docker build -t name:tag-version .
+	-> 태그
+
+docker hub 가입
+
+	docker push humanity1st/practice:tagname
+	docker login 필요
+
+image -> read-only
+
+container layer -> read-write
+	-> 컨테이너 내부 레이어에 있음, 로컬 아님
+
+volume -> host의 파일 디렉토리
+
+VOLUME [ "컨테이너 내 경로" ]
+	-> anonymous volume
+
+anonymous volume
+	-> 컨테이너 삭제시 지워짐
+
+        -> dockerfile에 명시 혹은 -v 경로
+
+name volume
+	-> 컨테이너 지워도 남아있음
+
+	-> -v 이름:컨테이너 내 경로
+
+        -> docker volume create test-volume
+		-> -v 옵션으로 직접 연결도 가능
+
+bind mount
+	-> host 디렉토리와 직접 연결
+
+        -> -v " 절대 경로: 컨테이너 내 경로 "
+
+-v 경로 뒤에 :ro 붙이면 read only
+
+-> 만약 노드 앱 모든 경로를 bind mount로 걸고 log 같은 폴더는 name volume, node_modules 같은 폴더는 anonymous volume으로 걸면 작업 내용은 즉시 반영, log는 그대로 남고 node_module은 변하더라도 컨테이너에 반영 안된다
+
+.dockerignore
+node_modules
+
+ENV PORT 80
+-> 환경변수 설정
+
+ENV PORT=80
+-> default value로 설정
+
+EXPOSE $PORT
+
+혹은 아래처럼
+
+-e PORT=8000
+--env-file 파일명
+
+--env-file ./.env
+
+argument
+-> env랑 차이 : arg -> buildtime, env -> runtime
+
+ARG DEFAULT_PORT=80
+-> 환경변수가 아니므로 도커 파일 내에서만 사용 가능
+
+ENV PORT $DEFAULT_PORT
+
+docker build시 --build-arg DEFAULT_PORT=8000 처럼 지정 가능
+
+docker 컨테이너 -> www.~
+	->  별다른 조건 없이 가능
+
+docker 컨테이너 -> localhost
+	-> host.docker.internal 로 변경 필요
+
+docker run -d --name mongodb mongo
+	-> docker inspect mongodb -> ip address 있음
+
+docker network create ~
+	-> mongodb:27017 처럼 컨테이너 이름으로 host 설정 가능
+
+--network 네트워크 이름
+
+docker-compose
+
+compose file reference 참조
+
+version : 도커 엔진 버전
+
+services : -> 컨테이너들 정의
+
+docker-compose의 경우 기본적으로 네트워크 만들어줌
+
+docker-compose up -d -> detach mode
+
+docker-compose down -v -> delete with volume
+
+docker-compse.yaml 예시
+
+version: "3.8"
+services:
+  mongodb:
+    image: "mongo"
+    volumes:
+      - data:/data/db
+    # environment:
+      # MONGO_INITDB_ROOT_USERNAME: root
+      # MONGO_INITDB_ROOT_PASSWORD: secret
+    # env_file:
+      # - ./env/mongo.env
+  backend:
+    # build: ./backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      # args:
+        # some-arg: 1
+    ports:
+      - "80:80"
+    volumes:
+      - logs:/app/logs
+      # bind-mount
+      - ./backend:/app
+      # anonymous volume for ignoring change from local
+      - /app/node_modules
+    depends_on:
+      - mongodb
+  frontend:
+    build: ./frontend
+    ports:
+      - "3001:3000"
+    volumes:
+      - ./frontend/src:/app/src
+    # -i -t option
+    stdin_open: true
+    tty: true
+    depends_on:
+      - backend
+
+docker-compose up --build
+	-> 이미지 새로 빌드하고 싶다면
+
+docker-compose build
+	-> 빌드만 하고 싶으면
+
+utility container
+공식 명칭 아님
+
+개발 환경 설치에 국한되지 않고 개발하고 싶다면?
+
+docker run -it -d node
+	-> node가 입력을 기다리지만 detach mode
+
+docker exec -it 컨테이너이름 npm init
+	-> -it 터미널 연결
+
+docker run -it node npm init
+	-> 명령어 바로 실행
+
+docker run -it -v local:/app node npm init
+	-> 이런식으로 로컬과 바인드 마운트로 연결 가능
+
+ENTRYPOINT [ "npm" ]
+docker run -it -v local:/app node init
+	-> 이미지 이름 뒤에 명령어 앞 prefix
+
+docker-compose.yaml
+
+versions: "3.8"
+services:
+  npm:
+    # entrypoint 있어야함
+
+    build: ./
+    stdin_open: true
+    tty: true
+    volume:
+      - ./:/app
+
+docker-compose run npm init
+
+production
+
+bind mount 는 사용하지 않는다
+
+컨테이너는 build 스텝이 필요함
+
+multi 컨테이너의 경우 host가 분할 가능해야함
+
+aws
+
+sudo yum update -y
+
+sudo amazon-linux-extras install docker
+
+sudo service docker start
+
+배포전략
+
+1. 소스 코드 전체 -> 빌드
+
+2. 이미지만
+
+multi-stage image
+
+FROM node as build
+
+WORKDIR /app
+
+COPY package.json .
+
+RUN npm install
+
+COPY . .
+
+RUN npm run build
+
+FROM nginx:stable-alpine
+
+# npm run build 시 build 폴더에 생김
+
+COPY --from-build /app/build /usr/share/nginx/html
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]
+
+docker build --target build -f 도커파일경로 
+-> build만 build
+
+쿠버네티스
+
+현재 문제
+
+컨테이너가 크래시되면 교체 필요 -> ecs가 헬스체크하고 re-deploying
+트래픽이 크면 컨테이너 증설 필요 -> ecs autoscaling
+트래픽 부하 분산 필요 -> elb load balancing
+
+하지만 ecs에 종속되어야함 -> 다른 플랫폼으로 전환 어려움
+
+pod -> 컨테이너, 내부에 여러 컨테이너가 있을 수 있음
+
+worker node -> cpu, memory를 가진 컨테이너 운영을 하는 단위, 하나의 노드에 여러 pod가 있을 수 있음, 하나의 컴퓨터라고 생각하는게 편함
+
+worker node 내부에 pod, proxy/config 존재
+
+master node -> 여러개의 worker node를 관리
+
+이 전체가 cluster (master, worker nodes)
+
+워커 노드
+
+- kubelet -> master와 worker node의 커뮤니케이션
+
+- kube-proxy -> node와 pod 사이의 네트워크
+
+마스터 노드
+
+- api server -> kubelet을 위한 api 제공
+
+- scheduler -> 새로운 pod, worker node 등
+
+- kube-controller-manager -> 워커 노드, 팟을 컨트롤
+
+- cloud-controller-manager -> AWS등의 cloud provider와의 상호작용
+
+클러스터
+
+-> node들의 세트
+
+노드
+
+-> physical or virtual machine, 하나 혹은 다량의 pod들을 가지고 cluster와 통신
+
+마스터 노드
+
+-> 워커 노드를 관리
+
+워커 노드
+
+-> 동작중인 앱 컨테이너 
+pods
+-> 실제로 동작중인 컨테이너와 필요한 자원(볼륨등)을 가지고 있음
+
+컨테이너
+
+-> 도커 컨테이너
+
+서비스
+
+-> 팟의 논리셋
+
