@@ -352,3 +352,66 @@ pods
 
 -> 팟의 논리셋
 
+
+kubernetes object
+kubernetes의 경우 결국 object를 통해 동작
+object는 선언 혹은 명령을 (imperatively or declaratively) 통해 생성됨
+
+pod object
+가장 작은 kubernetes 단위 -> 하나 혹은 여러 컨테이너 포함
+cluster-internal ip를 default로 가짐
+
+deployment object
+pods를 control -> 이 object를 통해 pod의 상태 등을 변경 가
+
+service object
+pod를 cluster 혹은 외부로 expose -> pod는 내부 ip를 가지나 항상 변함
+service가 공유 ip로 pod를 그룹화하며 외부 노출시킴
+
+
+테스트 : minikube, kubectl 설치
+
+kubectl create deployment first-app --image=humanity1st/kub-first-app
+
+-> deployment object 생성 커맨드
+-> docker hub에 있는 이미지만 설정 가능
+
+kubectl get deployments
+kubectl get pods
+
+
+kubectl delete deployment first-app
+-> deployment object 삭제
+
+
+behind the scenes
+kubectl create delyment --image
+1. master node 호출
+2. master node가 scheduler 호출 -> scheduler가 현재 동작 중인 pods를 확인하고 새로운 pod를 놓을 적절한 node를 찾음
+3. worker node에 배치되면 kubelet이 pod, container를 managing함
+
+
+kubectl expose deployment first-app --port=8080 --type
+type 종류
+-> ClusterIP
+-> NodePort
+-> LoadBalancer
+
+kubectl get services
+
+minikube servie first-app
+
+kubectl scale deployment/first-app --replicas=3
+
+kubectl set image deployment/first-app kub-first-app=humanity1st/kub-first-app
+-> 현재컨테이너이름=도커허브이미지로 교체
+
+kubectl rollout status deployment/first-app
+-> 재실행
+
+kubectl rollout undo deployment/first-app
+-> 잘못된 동작을 수행중일때 롤백
+
+
+
+
