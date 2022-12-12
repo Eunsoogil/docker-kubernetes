@@ -399,6 +399,8 @@ type 종류
 
 kubectl get services
 
+kubectl delete service first-app
+
 minikube servie first-app
 
 kubectl scale deployment/first-app --replicas=3
@@ -412,6 +414,18 @@ kubectl rollout status deployment/first-app
 kubectl rollout undo deployment/first-app
 -> 잘못된 동작을 수행중일때 롤백
 
+kubectl rollout history deployment/first-app
+-> 리비전 목록 확인
+-> --revision=2 -> 리비전 확인
 
 
 
+kubectl apply -f config.yaml
+-> 선언적으로 명시
+-> kubectl create deployment 와 비슷
+-> 실행중에도 자유롭게 변경 후 명령어로 적용가능
+
+kubectl delete -f config.yaml
+
+kubectl delete -l group=example
+-> label에 해당되는 object 삭제 가능

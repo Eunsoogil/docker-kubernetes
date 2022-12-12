@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+# Service, Job 등 선택
+kind: Deployment
+metadata:
+  name: second-app-deployment
+spec:
+  replicas: 1
+  # 항상 pod, 따라서 kind: Pod를 명시하지 않음
+  selector:
+    # deployment 객체가 사용할 pod를 selector에 명시
+    matchLabels:
+      app: second-app
+      tier: backend
+    # matchExpressions:
+      # 동적 matching 가능
+      # - {key: app, operator: In, values: [second-app, first-app]}
+  template:
+    metadata:
+      labels:
+        # 자유롭게 설정
+        app: second-app
+        tier: backend
+    spec:
+      containers:
+        - name: second-node
+          image: humanity1st/kub-first-app:2
+          # image push시 항상 pull
+          imagePullPolicy: Always
+          # 헬스체크
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            periodSeconds: 10
+            initialDelaySeconds: 5
+        # - name: ...
+        #   image: ...
