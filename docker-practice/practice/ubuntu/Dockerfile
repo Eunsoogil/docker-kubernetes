@@ -14,10 +14,10 @@ RUN apt-get install -y wget
 RUN apt-get install -y net-tools
 RUN apt-get install -y curl
 RUN apt-get install -y tree
+RUN apt-get install openssh-server sudo -y
+RUN apt-get install -y iputils-ping
 
 # ssh 접속을 위한 셋업
-RUN apt-get install openssh-server sudo -y
-
 RUN sed -ri 's/^#?PermitRootLogin\s+.*/PermitRootLogin yes/' /etc/ssh/sshd_config
 RUN sed -ri 's/UsePAM yes/#UsePAM yes/g' /etc/ssh/sshd_config
 
@@ -33,4 +33,4 @@ COPY start.sh .
 RUN chmod +x start.sh
 
 # CMD가 아닌 ENTRYPOINT를 사용하여 반드시 실행되도록 set up
-ENTRYPOINT ["sh", "/root/start.sh"]
+ENTRYPOINT ["/sbin/init", "sh /root/start.sh"]
